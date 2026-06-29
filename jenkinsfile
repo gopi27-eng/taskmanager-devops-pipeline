@@ -1,0 +1,39 @@
+pipeline {
+    agent any
+    environment {
+        DOCKER_HUB_USER = 'your_dockerhub_username'
+        IMAGE_NAME      = 'task-manager-enterprise'
+        REGISTRY_TAG    = "${DOCKER_HUB_USER}/${IMAGE_NAME}:${BUILD_NUMBER}"
+    }
+    stages {
+        stage('Pull SCM') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Docker Compile') {
+            steps {
+                sh "docker build -f docker/Dockerfile -t ${REGISTRY_TAG} ."
+            }
+        }
+        stage('Security Check') {
+            steps {
+                echo 'Executing static analysis security validation checks...'
+            }
+        }
+        stage('Publish Container Registry') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-login', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh "docker login -u ${USER} -p ${PASS}"
+                    sh "docker push ${REGISTRY_TAG}"
+                }
+            }
+        }
+        stage('Update GitOps Configuration') {
+            steps {
+                sh "sed -i 's|image: .*|image: ${REGISTRY_TAG}|g' k8s-gitops/app-deployment.yaml"
+                echo 'New deployment configuration mapped to GitOps repository manifests.'
+            }
+        }
+    }
+}

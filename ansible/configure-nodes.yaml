@@ -1,0 +1,16 @@
+---
+- name: Post-Provisioning Local Environment Setup
+  hosts: localhost
+  tasks:
+    - name: Ensure Kubernetes config directory exists locally
+      file:
+        path: "~/.kube"
+        state: directory
+        mode: '0755'
+
+    - name: Download AWS CLI installation package
+      get_url:
+        url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+        dest: "/tmp/awscliv2.zip"
+      register: download_cli
+      ignore_errors: true

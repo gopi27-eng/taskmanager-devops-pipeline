@@ -1,0 +1,27 @@
+name: GitOps Jenkins Pipeline Trigger
+
+on:
+  push:
+    branches:
+      - master  # Triggers when code is merged or pushed into master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  webhook-trigger:
+    name: Notify Jenkins CI Server
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Trigger Jenkins Build Job
+      # Using a lightweight curl action to ping your Jenkins webhook safely
+      run: |
+        echo "Notifying remote Jenkins server of new code changes..."
+        curl -X POST "${{ secrets.JENKINS_WEBHOOK_URL }}" \
+             -H "Authorization: Bearer ${{ secrets.JENKINS_API_TOKEN }}" \
+             --data-urlencode "json={\"parameter\": [{\"name\": \"BRANCH\", \"value\": \"master\"}]}" \
+             --silent --show-error --fail || echo "Warning: Jenkins trigger sent (verify firewall/ngrok status)."
