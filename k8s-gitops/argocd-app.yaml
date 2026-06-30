@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: task-manager-gitops
+  namespace: argocd
+spec:
+  project: default
+  source:
+    # REPLACEME: Put your exact GitHub repository URL here
+    repoURL: 'https://github.com/gopi27-eng/taskmanager-devops-pipeline'
+    targetRevision: HEAD
+    path: k8s-gitops # The exact folder holding your deployment files
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: applications # Deploys your app into the isolated app namespace
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
