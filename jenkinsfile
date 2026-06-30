@@ -49,3 +49,15 @@ pipeline {
         }
     }
 }
+        stage('Update GitOps Manifest') {
+            steps {
+                sh '''
+                git config user.email "ci-bot@example.com"
+                git config user.name "ci-bot"
+                git add k8s-gitops/app-deployment.yaml
+                git commit -m "ci: update image tag to ${REGISTRY_TAG}"
+                git push origin main
+            '''
+                echo 'Updated Kubernetes manifest with new image tag and pushed to GitHub.'
+    }
+}
