@@ -1,38 +1,50 @@
 pipeline {
     agent any
     environment {
-        DOCKER_HUB_USER = 'your_dockerhub_username'
+        DOCKER_HUB_USER = 'gopiborra227'   // your Docker Hub username
         IMAGE_NAME      = 'task-manager-enterprise'
         REGISTRY_TAG    = "${DOCKER_HUB_USER}/${IMAGE_NAME}:${BUILD_NUMBER}"
     }
     stages {
-        stage('Pull SCM') {
+        stage('Checkout SCM') {
             steps {
                 checkout scm
             }
         }
-        stage('Docker Compile') {
+
+        stage('Docker Build') {
             steps {
-                sh "docker build -f docker/Dockerfile -t ${REGISTRY_TAG} ."
+                sh "docker build -f Docker/Dockerfile -t ${REGISTRY_TAG} ."
             }
         }
+
         stage('Security Check') {
             steps {
                 echo 'Executing static analysis security validation checks...'
+                // Add tools like Trivy, Anchore, or Snyk here later
             }
         }
-        stage('Publish Container Registry') {
+
+        stage('Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-login', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh "docker login -u ${USER} -p ${PASS}"
+                    sh "echo ${PASS} | docker login -u ${USER} --password-stdin"
                     sh "docker push ${REGISTRY_TAG}"
                 }
             }
         }
-        stage('Update GitOps Configuration') {
+
+        stage('Update GitOps Manifest') {
             steps {
-                sh "sed -i 's|image: .*|image: ${REGISTRY_TAG}|g' k8s-gitops/app-deployment.yaml"
-                echo 'New deployment configuration mapped to GitOps repository manifests.'
+                sh """
+                sed -i 's|image: .*|image: ${REGISTRY_TAG}|g' k8s-gitops/app-deployment.yaml
+                git config user.email "ci-bot@example.com"
+                git config user.name "ci-bot"
+                git add k8s-gitops/app-deployment.yaml
+                git commit -m "ci: update image tag to ${REGISTRY_TAG}"
+                git push origin main
+                """
+                echo 'Updated Kubernetes manifest with new image tag and pushed to GitHub.'
             }
         }
     }
