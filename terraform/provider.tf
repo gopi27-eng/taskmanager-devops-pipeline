@@ -1,17 +1,24 @@
-terraform {
-  required_version = ">= 1.0.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
+# Variable mappings to ingest parameters dynamically from terraform.tfvars
+
+variable "postgres_username" {
+  type      = string
+  sensitive = true
 }
 
-provider "aws" {
-  region = var.aws_region
+variable "postgres_password" {
+  type      = string
+  sensitive = true
 }
 
-variable "aws_region" {
-  default = "us-east-1"
+variable "docker_hub_username" {
+  type = string
+}
+
+variable "jenkins_api_token" {
+  type      = string
+  sensitive = true
+}
+
+variable "jenkins_webhook_url" {
+  type = string
 }

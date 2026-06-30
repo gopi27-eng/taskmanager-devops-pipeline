@@ -18,10 +18,18 @@ spec:
         image: postgres:15-alpine
         ports:
         - containerPort: 5432
+
         env:
         - name: POSTGRES_DB
           value: "tasks_db"
         - name: POSTGRES_USER
-          value: "postgres"
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: postgres-username
         - name: POSTGRES_PASSWORD
-          value: "password"
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: postgres-password
+        

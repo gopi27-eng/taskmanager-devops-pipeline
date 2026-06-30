@@ -1,3 +1,14 @@
 venv1
 jenkins.war
 ps.text
+
+# Ignore local credential values matrices
+terraform/terraform.tfvars
+*.tfstate
+*.tfstate.backup
+.terraform/
+.env
+
+# Ignore operating system specific metadata
+.DS_Store
+Thumbs.db
