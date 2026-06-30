@@ -15,9 +15,10 @@ spec:
     spec:
       containers:
       - name: web-app
-        image: your_dockerhub_username/task-manager-enterprise:1
+        image: gopiborra227/task-manager-app:v1
+
         ports:
-        - containerPort: 5000
+        - containerPort: 6080
         env:
         - name: DB_HOST
           value: "postgres-service"
