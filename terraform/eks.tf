@@ -1,8 +1,16 @@
+# -------------------------------
+# IAM Role for EKS Cluster
+# -------------------------------
 resource "aws_iam_role" "eks_cluster_role" {
   name = "enterprise-eks-cluster-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "eks.amazonaws.com" } }]
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "eks.amazonaws.com" }
+    }]
   })
 }
 
@@ -11,20 +19,39 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
   role       = aws_iam_role.eks_cluster_role.name
 }
 
+# -------------------------------
+# EKS Cluster
+# -------------------------------
 resource "aws_eks_cluster" "eks" {
   name     = "enterprise-devops-cluster"
   role_arn = aws_iam_role.eks_cluster_role.arn
+
   vpc_config {
-    subnet_ids = [aws_subnet.public_1.id, aws_subnet.private_1.id]
+    # Multi-AZ setup: 2 public + 2 private subnets
+    subnet_ids = [
+      aws_subnet.public_1.id,
+      aws_subnet.private_1.id,
+      aws_subnet.public_2.id,
+      aws_subnet.private_2.id
+    ]
   }
+
   depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]
 }
 
+# -------------------------------
+# IAM Role for Worker Nodes
+# -------------------------------
 resource "aws_iam_role" "node_role" {
   name = "enterprise-eks-node-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "ec2.amazonaws.com" } }]
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+    }]
   })
 }
 
@@ -43,11 +70,19 @@ resource "aws_iam_role_policy_attachment" "node_ecr" {
   role       = aws_iam_role.node_role.name
 }
 
+# -------------------------------
+# Managed Node Group
+# -------------------------------
 resource "aws_eks_node_group" "nodes" {
   cluster_name    = aws_eks_cluster.eks.name
   node_group_name = "managed-workers"
   node_role_arn   = aws_iam_role.node_role.arn
-  subnet_ids      = [aws_subnet.public_1.id]
+
+  # Worker nodes across both AZs (private recommended)
+  subnet_ids = [
+    aws_subnet.private_1.id,
+    aws_subnet.private_2.id
+  ]
 
   scaling_config {
     desired_size = 2
@@ -55,7 +90,7 @@ resource "aws_eks_node_group" "nodes" {
     min_size     = 1
   }
 
-  instance_types = ["t3.micro"] # Required compute density for EKS + Addons
+  instance_types = ["t3.micro"] # Free-tier friendly
 
   depends_on = [
     aws_iam_role_policy_attachment.node_worker,
